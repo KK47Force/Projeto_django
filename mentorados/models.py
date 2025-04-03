@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from datetime import datetime
 
 class Navigators(models.Model):
     nome = models.CharField(max_length=255)
@@ -24,3 +25,12 @@ class Mentorados(models.Model):
 
     def __str__(self):
         return self.nome
+    
+
+class DisponibilidadeHorarios(models.Model):
+    data_inicial = models.DateTimeField(null=True, blank=True)
+    mentor = models.ForeignKey(User, on_delete=models.CASCADE)
+    agendado = models.BooleanField(default=False)
+
+    def data_final(self):
+        return self.data_inicial + datetime.timedelta(minutes=50)
