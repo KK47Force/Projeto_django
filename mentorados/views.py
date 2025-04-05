@@ -6,11 +6,12 @@ from django.contrib.messages import constants
 from datetime import datetime, timedelta
 from . auth import valida_token
 import locale
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required 
 
-# Create your views here.
+
+@login_required
 def mentorados(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
 
 
     if request.method == 'GET':
@@ -52,9 +53,10 @@ def mentorados(request):
         return redirect('mentorados')
     
 
+@login_required
 def reunioes(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
+    #if not request.user.is_authenticated:
+        #return redirect('login')
 
     if request.method == 'GET':
         reunioes = Reuniao.objects.filter(data__mentor=request.user)
@@ -205,3 +207,22 @@ def upload(request, id):
     )
     upload.save()
     return redirect(f'/mentorados/tarefa/{mentorado.id}')
+
+
+def tarefa_mentorado(request):
+    mentorado = valida_token(request.COOKIES.get('auth_token'))
+    if not mentorado:
+        return redirect('auth_mentorado')
+
+    if request.method == 'GET':
+        videos = Upload.objects.filter(mentorado=mentorado)
+        tarefas = Tarefa.objects.filter(mentorado=mentorado)
+        return render(request, 'tarefa_mentorado.html', {'mentorado': mentorado, 'videos': videos, 'tarefas': tarefas})
+
+@csrf_exempt 
+def tarefa_alterar(request, id):
+    tarefa = Tarefa.objects.get(id=id)
+
+    tarefa.realizada = not tarefa.realizada
+    tarefa.save()
+    return HttpResponse('ok')
