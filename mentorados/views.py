@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from .models import Mentorados, Navigators, DisponibilidadeHorarios, Reuniao
+from django.http import HttpResponse, Http404
+from .models import Mentorados, Navigators, DisponibilidadeHorarios, Reuniao, Tarefa, Upload
 from django.contrib import messages
 from django.contrib.messages import constants
 from datetime import datetime, timedelta
@@ -171,4 +171,37 @@ def agendar_reuniao(request):
 
         messages.add_message(request, constants.SUCCESS, 'Reunião agendada com sucesso!')
         return redirect('escolher_dia')
+    
 
+def tarefa(request, id):
+    mentorado = Mentorados.objects.get(id=id)
+    if mentorado.user != request.user:
+        raise Http404()
+
+    if request.method == 'GET':
+        tarefas = Tarefa.objects.filter(mentorado=mentorado)
+        videos = Upload.objects.filter(mentorado=mentorado).order_by('-id')
+        return render(request, 'tarefa.html', {'mentorado': mentorado, 
+                                               'tarefas': tarefas, 
+                                               'videos': videos})
+    if request.method == 'POST':
+        tarefa = Tarefa(
+            mentorado=mentorado,
+            tarefa=request.POST.get('tarefa')
+        )
+        tarefa.save()
+        return redirect(f'/mentorados/tarefa/{id}')
+
+
+def upload(request, id):
+    mentorado = Mentorados.objects.get(id=id)
+    if mentorado.user != request.user:
+        raise Http404()
+
+    video = request.FILES.get('video')
+    upload = Upload(
+        mentorado=mentorado,
+        video=video
+    )
+    upload.save()
+    return redirect(f'/mentorados/tarefa/{mentorado.id}')
